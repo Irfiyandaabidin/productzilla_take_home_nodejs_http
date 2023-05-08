@@ -1,13 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const prompt = require('prompt-sync')()
+const id = require('uniqid')
 
 const datadir = './data'
 const dataPath = path.join(datadir, 'data.json')
 
 const tampilData = () => {
     if(!fs.existsSync(dataPath)){
-        console.log('Data belum ada')
+        return ('Data belum ada')
     } else {
         const data = fs.readFileSync(dataPath)
         dataJson = JSON.parse(data)
@@ -30,10 +31,14 @@ const tambahData = (inputData) => {
     } else {
         const oldData = fs.readFileSync(dataPath)
         const newData = JSON.parse(oldData)
-        newData.push(inputData)
-        const newDataString = JSON.stringify(newData)
-        fs.writeFileSync(dataPath, newDataString)
-        console.log('Berhasil menambahkan data')
+        if(newData.find(d => d.id == inputData.id)){
+            return('Id barang sudah ada')
+        } else {
+            newData.push(inputData)
+            const newDataString = JSON.stringify(newData)
+            fs.writeFileSync(dataPath, newDataString)
+            return('Berhasil menambahkan data')
+        }
     }
 }
 
@@ -49,41 +54,38 @@ const tampilHargaBarang = () => {
     return result
 }
 
-const updateData = (namaBarang) => {
+const tampilBarangById = (id) => {
     const data = fs.readFileSync(dataPath)
     const dataJson = JSON.parse(data)
-    const findIndexData = dataJson.findIndex(data => data.nama === namaBarang)
-    if(findIndexData != -1){
-        const id = dataJson[findIndexData].id
-        const nama = prompt(console.log('Masukkan nama barang (baru) : '))
-        const harga = parseInt(prompt(console.log('Masukkan harga barang (baru) : ')))
-        const kuantitas = parseInt(prompt(console.log('Masukkan kuantitas barang (baru) : ')))
-        const newData = {
-            id,
-            nama,
-            harga,
-            kuantitas
-        }
-        dataJson[findIndexData] = newData
-        const dataString = JSON.stringify(dataJson)
-        fs.writeFileSync(dataPath, dataString)
+    const dataById = dataJson.find(d => d.id === parseInt(id))
+    if(dataById){
+        return dataById
     } else {
-        console.log('Nama barang tidak ditemukan')
+        return "Id tidak ditemukan"
     }
 }
 
-const hapusBarangByName = (namaBarang) => {
+const updateData = (idBarang, newData) => {
     const data = fs.readFileSync(dataPath)
     const dataJson = JSON.parse(data)
-    const findIndexByName = dataJson.findIndex(data => data.nama === namaBarang)
-    if (findIndexByName !== -1){
-        const konfirmasi = prompt(console.log(`Yakin hapus ${namaBarang} dari data? (y/t): `))
-        if (konfirmasi === 'y'){
-            dataJson.splice(findIndexByName, 1)
-            const dataString = JSON.stringify(dataJson)
-            fs.writeFileSync(dataPath, dataString)
-        }
+    const findIndexData = dataJson.findIndex(data => data.id === parseInt(idBarang))
+    if(findIndexData != -1){
+        dataJson[findIndexData] = newData
+        const dataString = JSON.stringify(dataJson)
+        fs.writeFileSync(dataPath, dataString)
+        return (dataJson[findIndexData]) 
+    } else {
+        return('Id tidak ditemmukan')
     }
+}
+
+const hapusBarangById = (idBarang) => {
+    const data = fs.readFileSync(dataPath)
+    const dataJson = JSON.parse(data)
+    const newData = dataJson.filter(d => d.id != parseInt(idBarang))
+    const newDataString = JSON.stringify(newData)
+    fs.writeFileSync(dataPath, newDataString);
+    return("Data berhasil dihapus")
 }
 
 if(!fs.existsSync(datadir)){
@@ -95,5 +97,6 @@ module.exports = {
     tambahData,
     tampilHargaBarang,
     updateData,
-    hapusBarangByName
+    hapusBarangById,
+    tampilBarangById
 }

@@ -1,62 +1,52 @@
-// Buat sebuah aplikasi untuk:
+// Buat sebuah aplikasi menggunakan module HTTP untuk:
 // 1. menyimpan data stok barang (id barang, nama, harga, kuantitas)
 // 2. menampilkan semua data stok barang
-// 3. menampilkan total harga semua barang (harga * kuantitas)
-// 4. update data barang *opsional
-// 5. hapus data barang *opsional
+// 3. menampilkan satu barang berdasarkan id
+// 4. update data barang
+// 5. hapus data barang
 
-// ** data di simpan ke dalam sebuah file
-// ** data inputan diambil dari prompt atau inputan user
+const http = require('http');
+const url = require('url');
+const handleData = require('./handleData');
 
-const path = require('path');
-const fs = require('fs');
-const prompt = require('prompt-sync')()
-const uniqid = require('uniqid')
-const handleData = require('./handleData')
-
-ulang = true
-const main = async() => {
-    while(ulang){
-    let menu = parseInt(prompt(console.log(`
-    1. Tampilkan data stok
-    2. Tambah data
-    3. Tampilkan total harga barang
-    4. Update data
-    5. Delete data
-    6. exit
-    `)))
-    
-    if (menu === 1){
-        console.log(handleData.tampilData())
-    }
-    else if (menu === 2){
-        const id = uniqid()
-        const nama = prompt(console.log('Masukkan nama barang : '))
-        const harga = parseInt(prompt(console.log('Masukkan harga barang : ')))
-        const kuantitas = parseInt(prompt(console.log('Masukkan kuantitas barang : ')))
-        const newData = {
-            id,
-            nama,
-            harga,
-            kuantitas
+const server = http.createServer((req, res) => {
+    const { pathname, query } = url.parse(req.url, true)
+    const method = req.method
+    if(pathname === '/produk'){
+        if (method === 'GET' && query.id != undefined){
+            res.end(JSON.stringify(handleData.tampilBarangById(query.id)))
+        
+        } else if(method === 'GET'){
+            res.end(JSON.stringify(handleData.tampilData()))
+        
+        } else if (method === 'POST'){
+            let body = '';
+            req.on('data', (chunk) => {
+                body += chunk.toString();
+            })
+            req.on('end', () => {
+                const data = JSON.parse(body)
+                res.end(handleData.tambahData(data))
+            })
+        
+        } else if (method === 'PUT' && query.id != undefined){
+            let body = '';
+            req.on('data', (chunk) => {
+                body += chunk.toString();
+            })
+            req.on('end', () => {
+                const data = JSON.parse(body)
+                res.end(JSON.stringify(handleData.updateData(query.id, data)))
+            })
+        } else if (method === 'DELETE' && query.id != undefined){
+            res.end(JSON.stringify(handleData.hapusBarangById(query.id)))
         }
-        handleData.tambahData(newData)
-    }
-    else if (menu === 3){
-        console.log(handleData.tampilHargaBarang())
-    }
-    else if (menu === 4){
-        const namaBarang = prompt(console.log('Masukkan nama barang untuk diupdate: '))
-        handleData.updateData(namaBarang)
-    }
-    else if (menu === 5){
-        const namaBarang = prompt(console.log('Masukkan nama barang untuk dihapus: '))
-        handleData.hapusBarangByName(namaBarang)
-    }
-    else if (menu === 6){
-        ulang = false
-    }
-}
-}
+    } else {
 
-main()
+    }
+})
+
+const PORT = 3000
+server.listen(PORT)
+
+console.log('Server running on port 3000')
